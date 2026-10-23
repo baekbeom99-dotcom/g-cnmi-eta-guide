@@ -1,0 +1,807 @@
+<title>괌 ETA 신청 도우미</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: 한 화면에 한 단계. 위에는 '안내서' 띠와 진행 막대, 아래에는 큰 이전/다음 버튼.
+   의도적으로 밝은 테마 하나만 사용: 공식 사이트(남색)와 확실히 다른 노랑·주황 종이 느낌. */
+:root {
+  --paper: #FFF6D8;      /* 버터색 바탕 */
+  --card: #FFFFFF;
+  --ink: #2A2017;        /* 본문 글자 */
+  --ink-soft: #5E4E3C;
+  --orange: #C9500C;     /* 주요 버튼·강조 */
+  --orange-deep: #A23F08;
+  --sun: #FFD458;        /* 형광펜 강조 */
+  --line: #E9D6A8;
+  --ok: #1D7347;
+  --warn-bg: #FFE3D3;
+  --warn-ink: #8E2A00;
+  --official: #1C3764;   /* 공식 사이트 그림에만 사용 */
+  --official-soft: #E9EEF6;
+  --font: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --fs: 20px;            /* 글자 크기 조절 기준 */
+  color-scheme: light;
+}
+html { font-size: var(--fs); }
+html.size-1 { --fs: 18px; }
+html.size-3 { --fs: 23px; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1rem;
+  line-height: 1.65;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--orange-deep);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+button { font-family: inherit; }
+:focus-visible { outline: 4px solid var(--sun); outline-offset: 2px; }
+
+/* ── 상단 고정 ─────────────────────────── */
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--line);
+}
+.band {
+  background: var(--orange-deep); color: #fff;
+  font-size: .8rem; font-weight: 700; text-align: center;
+  padding-block: 6px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.head {
+  max-width: 720px; margin: 0 auto;
+  padding-block: 10px 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 8px;
+}
+.head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.app-name { font-weight: 900; font-size: .95rem; margin: 0; }
+.tools { display: flex; gap: 6px; }
+.tool {
+  border: 2px solid var(--ink); background: var(--card); color: var(--ink);
+  border-radius: 999px; padding: 4px 12px; font-size: .78rem; font-weight: 700;
+  min-height: 40px; cursor: pointer;
+}
+.tool[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.progress { display: flex; align-items: center; gap: 10px; }
+.bar { flex: 1; height: 12px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--orange); transition: width .25s; }
+.count { font-weight: 900; font-size: .9rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ── 본문 ─────────────────────────────── */
+main {
+  max-width: 720px; margin: 0 auto;
+  padding-block: 20px 140px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.step { display: grid; gap: 18px; }
+.kicker {
+  display: inline-block; justify-self: start;
+  background: var(--ink); color: var(--paper);
+  font-weight: 900; font-size: .8rem; letter-spacing: .04em;
+  padding: 2px 12px; border-radius: 6px;
+}
+h2 { font-size: 1.55rem; line-height: 1.35; margin: 0; font-weight: 900; text-wrap: balance; }
+h3 { font-size: 1.1rem; margin: 0; font-weight: 900; }
+p { margin: 0; }
+mark { background: var(--sun); color: var(--ink); padding: 0 3px; border-radius: 3px; font-weight: 700; }
+b, strong { font-weight: 900; }
+
+.do { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; counter-reset: d; }
+.do > li {
+  counter-increment: d;
+  display: grid; grid-template-columns: 2.1rem 1fr; gap: 10px; align-items: start;
+  background: var(--card); border: 2px solid var(--line); border-radius: 14px;
+  padding: 14px 14px;
+}
+.do > li::before {
+  content: counter(d);
+  width: 2.1rem; height: 2.1rem; border-radius: 50%;
+  background: var(--orange); color: #fff; font-weight: 900;
+  display: grid; place-items: center; font-size: 1rem;
+}
+.do > li > div { min-width: 0; display: grid; gap: 6px; }
+.small { font-size: .85rem; color: var(--ink-soft); }
+
+.note, .warn {
+  border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px;
+}
+.note { background: #FFF0B8; border: 2px dashed #D9A400; }
+.warn { background: var(--warn-bg); border: 3px solid var(--warn-ink); color: var(--warn-ink); }
+.warn h3, .note h3 { font-size: 1rem; }
+.answer {
+  display: inline-block; font-weight: 900; font-size: 1.05rem;
+  background: var(--ink); color: var(--paper); padding: 1px 12px; border-radius: 8px;
+}
+
+/* 공식 사이트 모습 (그림) */
+.shot {
+  border: 3px dashed var(--official); border-radius: 14px; background: #fff;
+  padding: 30px 14px 14px; position: relative; display: grid; gap: 10px;
+}
+.shot::before {
+  content: "공식 사이트에서는 이렇게 보여요 (참고 그림)";
+  position: absolute; top: -2px; left: -2px;
+  background: var(--official); color: #fff; font-size: .7rem; font-weight: 700;
+  padding: 2px 10px; border-radius: 12px 0 10px 0;
+}
+.o-bar { background: var(--official); color: #fff; padding: 8px 12px; border-radius: 6px; font-weight: 700; font-size: .85rem; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.o-btn { background: var(--official); color: #fff; text-align: center; padding: 10px; border-radius: 4px; font-weight: 700; font-size: .9rem; }
+.o-btn.ghost { background: #fff; color: var(--ink); border: 1px solid #c9ced8; }
+.o-q { color: #2C5282; font-weight: 700; font-size: .9rem; }
+.o-radio { display: flex; gap: 22px; font-size: .9rem; }
+.o-radio span::before { content: "○ "; }
+.o-radio .on::before { content: "◉ "; color: #2C5282; }
+.o-field { border-bottom: 1px solid #555; padding-bottom: 4px; display: grid; }
+.o-field small { color: #2C5282; font-size: .75rem; }
+.o-field span { font-size: .95rem; min-height: 1.4em; }
+.o-check { background: #FDECEC; border: 1px solid #f2c4c4; color: #8b1c1c; font-size: .8rem; padding: 8px; border-radius: 4px; }
+.tap { outline: 4px solid var(--orange); outline-offset: 3px; border-radius: 6px; position: relative; }
+.tap::after {
+  content: "여기를 누르세요"; position: absolute; right: -4px; top: -16px;
+  background: var(--orange); color: #fff; font-size: .65rem; font-weight: 900;
+  padding: 1px 8px; border-radius: 999px; white-space: nowrap;
+}
+
+/* 복사 표 */
+.copylist { display: grid; gap: 10px; }
+.crow {
+  background: var(--card); border: 2px solid var(--ink); border-radius: 14px;
+  padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center;
+}
+.crow .lab { grid-column: 1 / -1; font-size: .8rem; font-weight: 700; color: var(--ink-soft); }
+.crow .val { font-size: 1.15rem; font-weight: 900; letter-spacing: .02em; min-width: 0; user-select: all; }
+.crow .val.blank { color: var(--ink-soft); font-weight: 500; font-size: .95rem; user-select: none; }
+.copy {
+  min-height: 48px; min-width: 88px; padding: 0 14px;
+  background: var(--orange); color: #fff; border: 0; border-radius: 10px;
+  font-weight: 900; font-size: .95rem; cursor: pointer;
+}
+.copy:active { transform: translateY(1px); }
+.copy.done { background: var(--ok); }
+
+.big-link {
+  display: block; text-align: center; text-decoration: none;
+  background: var(--card); color: var(--ink); border: 3px solid var(--ink);
+  border-radius: 14px; padding: 14px; font-weight: 900; font-size: 1.05rem;
+}
+.big-link small { display: block; font-weight: 500; font-size: .8rem; color: var(--ink-soft); }
+
+/* 전화번호 변환기 */
+.phone { background: var(--card); border: 2px solid var(--ink); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+.phone label { font-weight: 900; }
+.phone input {
+  font: inherit; font-size: 1.2rem; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 10px; width: 100%;
+  background: #fff; color: var(--ink);
+}
+.phone .out { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; background: #FFF0B8; border-radius: 10px; padding: 10px 12px; }
+.phone .out b { font-size: 1.3rem; letter-spacing: .03em; font-variant-numeric: tabular-nums; min-width: 0; }
+
+.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.checks li { display: flex; gap: 10px; align-items: flex-start; background: var(--card); border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.checks input { width: 26px; height: 26px; flex: none; margin-top: 3px; accent-color: var(--orange); }
+
+.faq { display: grid; gap: 10px; }
+.faq details { background: var(--card); border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.faq summary { font-weight: 900; cursor: pointer; }
+.faq details p { margin-top: 8px; }
+
+/* ── 하단 고정 버튼 ───────────────────── */
+.nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  background: var(--paper); border-top: 3px solid var(--ink);
+  padding-top: 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.nav-in { max-width: 720px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
+.nav button {
+  min-height: 60px; border-radius: 14px; font-size: 1.1rem; font-weight: 900; cursor: pointer;
+}
+#prev { background: var(--card); color: var(--ink); border: 3px solid var(--ink); }
+#next { background: var(--orange); color: #fff; border: 3px solid var(--orange-deep); }
+#prev:disabled { opacity: .35; cursor: default; }
+
+/* 전체 단계 목록 */
+.menu { position: fixed; inset: 0; z-index: 20; background: rgba(42,32,23,.55); display: grid; place-items: end center; }
+.menu-in {
+  background: var(--paper); width: 100%; max-width: 720px; max-height: 85%; overflow: auto;
+  border-radius: 20px 20px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  display: grid; gap: 8px;
+}
+.menu-head { display: flex; justify-content: space-between; align-items: center; }
+.menu ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.menu li button {
+  width: 100%; text-align: left; background: var(--card); color: var(--ink);
+  border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .95rem; cursor: pointer;
+  display: flex; gap: 10px;
+}
+.menu li button b { min-width: 2.2em; font-variant-numeric: tabular-nums; }
+.menu li button[aria-current="step"] { border-color: var(--orange); background: #FFE8CF; }
+
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<div class="top">
+  <div class="band">이 화면은 학부모용 <u>안내서</u>입니다 · 실제 신청은 공식 사이트에서 하세요</div>
+  <div class="head">
+    <div class="head-row">
+      <h1 class="app-name">괌 여행 허가(ETA) 신청 도우미</h1>
+      <div class="tools">
+        <button class="tool" id="readBtn" aria-pressed="false" type="button">소리로 듣기</button>
+        <button class="tool" id="sizeBtn" type="button">글자 크기</button>
+        <button class="tool" id="menuBtn" type="button">전체 단계</button>
+      </div>
+    </div>
+    <div class="progress">
+      <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+      <span class="count" id="count">1 / 1</span>
+    </div>
+  </div>
+</div>
+
+<main id="steps">
+
+<!-- 0. 시작 -->
+<section class="step" data-title="시작하기 전에 준비하세요">
+  <span class="kicker">준비</span>
+  <h2>시작하기 전에 이 3가지를 준비하세요</h2>
+  <p>천천히 한 단계씩 따라 하시면 됩니다. 한 화면을 다 하셨으면 아래 <mark>다음</mark> 버튼을 누르세요.</p>
+  <ol class="do">
+    <li><div><h3>자녀 여권 사진</h3><p>여권 사진이 있는 면을 휴대폰으로 <b>미리 찍어 두세요.</b> 글자가 흐리지 않게, 밝은 곳에서 찍으세요.</p></div></li>
+    <li><div><h3>자녀 얼굴 사진(셀카)</h3><p><b>밝은 벽 앞에서</b> 자녀 얼굴을 정면으로 찍어 두세요. 모자와 안경은 벗고 찍으세요. 어두우면 얼굴 인식이 잘 안 됩니다.</p></div></li>
+    <li><div><h3>자주 보는 이메일 주소</h3><p>허가 결과가 <b>이메일로</b> 옵니다. 네이버 메일처럼 평소에 확인하시는 주소를 준비하세요.</p></div></li>
+  </ol>
+  <div class="note">
+    <h3>꼭 알아 두세요</h3>
+    <p>· 신청은 <b>무료</b>입니다. 돈을 내라는 사이트는 가짜입니다.</p>
+    <p>· 자녀 <b>한 명마다 따로</b> 신청합니다.</p>
+    <p>· <b>출발 7일 전까지</b> 신청을 마쳐 주세요.</p>
+    <p>· 시간은 20~30분쯤 걸립니다.</p>
+  </div>
+</section>
+
+<!-- 1. 접속 -->
+<section class="step" data-title="공식 사이트 열기">
+  <span class="kicker">1단계</span>
+  <h2>공식 사이트를 여세요</h2>
+  <a class="big-link" href="https://g-cnmi-eta.cbp.dhs.gov/" target="_blank" rel="noopener">공식 사이트 열기 ↗<small>g-cnmi-eta.cbp.dhs.gov</small></a>
+  <div class="copylist" data-noread>
+    <div class="crow"><span class="lab">주소를 직접 붙여넣을 때</span><span class="val">https://g-cnmi-eta.cbp.dhs.gov</span><button class="copy" type="button" data-copy="https://g-cnmi-eta.cbp.dhs.gov">복사</button></div>
+  </div>
+  <div class="note">
+    <h3>이 안내서로 돌아오는 방법</h3>
+    <p>공식 사이트는 <b>새 창</b>으로 열립니다. 이 안내서로 돌아오려면 휴대폰 화면 아래나 위에 있는 <b>숫자가 적힌 네모 버튼(탭)</b>을 누르고 이 안내서를 고르세요.</p>
+    <p class="small">휴대폰이 두 대라면 한 대로는 이 안내서를 보고, 다른 한 대로 신청하시면 더 편합니다.</p>
+  </div>
+</section>
+
+<!-- 2. 한국어 -->
+<section class="step" data-title="한국어로 바꾸기">
+  <span class="kicker">2단계</span>
+  <h2>화면을 한국어로 바꾸세요</h2>
+  <ol class="do">
+    <li><div><p>공식 사이트 <b>맨 위 검은 줄</b>에 있는 <mark>ENGLISH (U.S./U.K.)</mark> 글자를 누르세요.</p></div></li>
+    <li><div><p>나오는 목록에서 <mark>한국어</mark>를 누르세요.</p></div></li>
+  </ol>
+  <div class="shot" data-noread>
+    <div class="o-bar"><span>Department of Homeland Security</span><span class="tap">ENGLISH (U.S./U.K.)</span></div>
+    <div class="o-bar" style="flex-direction:column;gap:4px"><span>English (U.S./U.K.)</span><span>簡體中文 · 繁體中文 · 日本語</span><span class="tap" style="align-self:flex-start">한국어</span></div>
+  </div>
+</section>
+
+<!-- 3. 신규 신청 -->
+<section class="step" data-title="신규 신청서 만들기">
+  <span class="kicker">3단계</span>
+  <h2>‘신규 신청서 생성’을 누르세요</h2>
+  <ol class="do">
+    <li><div><p>파란 버튼 <mark>신규 신청서 생성</mark>을 누르세요.</p></div></li>
+    <li><div><p>‘보안 알림’ 창이 뜨면 오른쪽 아래 <b>파란 버튼(확인 및 계속)</b>을 누르세요.</p></div></li>
+  </ol>
+  <div class="shot" data-noread>
+    <p style="font-weight:700;color:var(--official)">공식 G-CNMI ETA 신청</p>
+    <div class="o-btn tap">신규 신청서 생성</div>
+    <div class="o-btn ghost">기존 신청서 계속</div>
+  </div>
+  <p class="small">‘기존 신청서 계속’은 나중에 결과를 확인할 때 씁니다. 지금은 누르지 마세요.</p>
+</section>
+
+<!-- 4. 약관 -->
+<section class="step" data-title="주의 사항에 동의하기">
+  <span class="kicker">4단계</span>
+  <h2>주의 사항에 동의하세요</h2>
+  <ol class="do">
+    <li><div><p>긴 글이 나옵니다. 글 맨 아래로 내려가세요.</p></div></li>
+    <li><div><p><mark>네, 해당 정보를 읽고 이해하였으며 이러한 약관에 동의합니다.</mark>를 누르세요.</p></div></li>
+    <li><div><p>파란 <b>다음</b> 버튼을 누르세요.</p></div></li>
+  </ol>
+  <div class="shot" data-noread>
+    <div class="o-radio" style="flex-direction:column;gap:6px"><span class="on tap">네, 해당 정보를 읽고 이해하였으며…</span><span>아니요. 추가 설명이 필요하거나…</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="o-btn ghost">나가기</div><div class="o-btn">다음</div></div>
+  </div>
+</section>
+
+<!-- 5. 신청자 정보 · 사진 -->
+<section class="step" data-title="여권·얼굴 사진 올리기">
+  <span class="kicker">5단계</span>
+  <h2>여권과 얼굴 사진을 올리세요</h2>
+  <ol class="do">
+    <li><div><p>“중화인민공화국(PRC)의 시민/국민이신가요?” → <span class="answer">아니요</span></p></div></li>
+    <li><div><p><mark>여권 업로드</mark>를 누르고, 미리 찍어 둔 <b>여권 사진</b>을 고르세요.</p></div></li>
+    <li><div><p><mark>셀카 사진 업로드</mark>를 누르고, 미리 찍어 둔 <b>자녀 얼굴 사진</b>을 고르세요.</p></div></li>
+  </ol>
+  <div class="shot" data-noread>
+    <p class="o-q">중화인민공화국(PRC)의 시민/국민이신가요? *</p>
+    <div class="o-radio"><span>예</span><span class="on">아니요</span></div>
+    <div class="o-btn tap">여권 업로드</div>
+    <div class="o-btn">셀카 사진 업로드</div>
+  </div>
+  <div class="note">
+    <h3>얼굴 사진이 안 올라가면</h3>
+    <p>밝은 벽 앞에서 모자·안경 없이 다시 찍어 올려 보세요. 그림자가 없을수록 잘 됩니다.</p>
+  </div>
+</section>
+
+<!-- 6. 여권 정보 -->
+<section class="step" data-title="여권 정보 확인하기">
+  <span class="kicker">6단계</span>
+  <h2>여권과 똑같은지 한 칸씩 확인하세요</h2>
+  <p>사진을 올리면 글자가 저절로 채워지기도 합니다. <b>여권을 옆에 펴 놓고</b> 한 칸씩 맞는지 보세요. 틀리면 고쳐 주세요.</p>
+  <ol class="do">
+    <li><div><p><b>성</b>: 여권의 영어 성 (예: LEE)<br><b>이름(Given Name)</b>: 여권의 영어 이름 (예: GILDONG)</p></div></li>
+    <li><div><p><b>여권 번호</b>: 숫자 0과 영어 O를 헷갈리지 않게 보세요.</p></div></li>
+    <li><div><p><b>발급 국가</b>와 <b>시민권/국적의 국가</b>: <span class="answer">SOUTH KOREA (KOR)</span></p></div></li>
+    <li><div><p><b>발급일, 만료일, 생년월일</b>: 순서가 <mark>일 → 월 → 년도</mark>입니다. 우리나라와 순서가 반대이니 조심하세요.</p></div></li>
+    <li><div><p><b>주민등록번호</b>: 자녀의 주민등록번호를 넣으세요. <b>개인식별번호</b> 칸은 비워 두셔도 됩니다.</p></div></li>
+    <li><div><p><b>성별</b>을 고르세요.</p></div></li>
+  </ol>
+  <div class="shot" data-noread>
+    <div class="o-field"><small>성 *</small><span>LEE</span></div>
+    <div class="o-field"><small>이름(Given Name) *</small><span>GILDONG</span></div>
+    <div class="o-field"><small>발급일 *</small><span>일 ▾ &nbsp; 월 ▾ &nbsp; 년도 ▾</span></div>
+  </div>
+  <div class="warn">
+    <h3>가장 많이 틀리는 곳</h3>
+    <p>성과 이름 칸을 서로 바꿔 넣는 경우가 많습니다. 성(LEE)은 성 칸에, 이름은 이름 칸에 넣으세요.</p>
+  </div>
+</section>
+
+<!-- 7. 다른 국적 -->
+<section class="step" data-title="다른 국적 질문">
+  <span class="kicker">7단계</span>
+  <h2>‘기타 시민권/국적’ 질문은 모두 ‘아니요’</h2>
+  <ol class="do">
+    <li><div><p>“지금 다른 국가의 시민이나 국민이신가요?” → <span class="answer">아니요</span></p></div></li>
+    <li><div><p>“이전에 다른 국가의 시민이나 국민이었던 적이 있으신가요?” → <span class="answer">아니요</span></p></div></li>
+  </ol>
+  <p class="small">자녀가 실제로 다른 나라 국적을 가진 적이 있다면 ‘예’를 고르고 사실대로 적으세요.</p>
+</section>
+
+<!-- 8. 이메일 -->
+<section class="step" data-title="이메일 입력·인증">
+  <span class="kicker">8단계</span>
+  <h2>이메일 주소를 넣으세요 (아주 중요)</h2>
+  <ol class="do">
+    <li><div><p><b>이메일 주소</b>와 <b>이메일 주소 확인</b> 두 칸에 <b>같은 주소</b>를 넣으세요.</p></div></li>
+    <li><div><p>그 메일함을 열어 보세요. 공식 사이트에서 보낸 <b>인증 메일</b>이 와 있습니다. 메일 안의 안내대로 인증하세요.</p></div></li>
+    <li><div><p>인증이 끝나면 공식 사이트에 <b>초록색 엄지 그림</b>과 함께 “이메일 주소가 인증되었습니다”가 보입니다.</p></div></li>
+  </ol>
+  <div class="warn">
+    <h3>메일이 안 오면</h3>
+    <p>메일함의 <b>스팸함</b>도 꼭 확인하세요. 주소를 잘못 넣으면 결과를 받을 수 없습니다.</p>
+  </div>
+  <div class="note">
+    <h3>중간에 멈춰야 하면</h3>
+    <p>아래쪽 <b>저장 및 종료</b>를 누르면 나중에 이어서 할 수 있습니다. 단, <b>7일 안에</b> 끝내지 않으면 지워집니다.</p>
+  </div>
+</section>
+
+<!-- 9. 개인 정보 질문 -->
+<section class="step" data-title="개인 정보 질문">
+  <span class="kicker">9단계</span>
+  <h2>‘개인 정보’ 질문 3개는 모두 ‘아니요’</h2>
+  <ol class="do">
+    <li><div><p>“다른 이름이나 별칭으로 알려져 있나요?” → <span class="answer">아니요</span></p></div></li>
+    <li><div><p>“다른 국가에서 여행하기 위해 여권 또는 주민등록증을 발급받은 적이 있나요?” → <span class="answer">아니요</span></p></div></li>
+    <li><div><p>“이전에 이민 또는 비이민 미국 비자를 신청한 적이 있으신가요?” → <span class="answer">아니요</span></p></div></li>
+  </ol>
+  <p class="small">자녀가 미국 비자를 신청한 적이 있다면 ‘예’를 고르고 사실대로 적으세요.</p>
+</section>
+
+<!-- 10. 집 주소 -->
+<section class="step" data-title="집 주소(영문) 넣기">
+  <span class="kicker">10단계</span>
+  <h2>집 주소를 영어로 넣으세요</h2>
+  <ol class="do">
+    <li><div><p>네이버에서 <mark>우리집 주소 + 영문주소</mark>라고 검색하면 영어 주소가 나옵니다. 아래 사이트에서도 찾을 수 있습니다.</p>
+      <a class="big-link" href="https://www.juso.go.kr/" target="_blank" rel="noopener" data-noread>도로명주소 사이트 열기 ↗<small>주소 검색 후 ‘영문보기’를 누르세요</small></a></div></li>
+    <li><div><p><b>주소 입력란 1</b>: 건물 번호, 도로 이름, 읍·면 순서로 넣습니다.<br><span class="small">예: 123, Socheon-ro, Socheon-myeon</span></p></div></li>
+    <li><div><p><b>아파트 번호</b>: 아파트라면 동·호수를 넣고, 아니면 비워 두세요.</p></div></li>
+    <li><div><p><b>도시</b>, <b>주/도/지역</b>, <b>국가</b>는 아래를 복사해서 붙여넣으세요.</p></div></li>
+  </ol>
+  <div class="copylist" data-noread>
+    <div class="crow"><span class="lab">도시 *</span><span class="val">Bonghwa-gun</span><button class="copy" type="button" data-copy="Bonghwa-gun">복사</button></div>
+    <div class="crow"><span class="lab">주/도/지역 *</span><span class="val">Gyeongsangbuk-do</span><button class="copy" type="button" data-copy="Gyeongsangbuk-do">복사</button></div>
+    <div class="crow"><span class="lab">국가 * (목록에서 고르세요)</span><span class="val">SOUTH KOREA (KOR)</span><button class="copy" type="button" data-copy="SOUTH KOREA (KOR)">복사</button></div>
+  </div>
+  <p class="small">봉화군에 살지 않으시면 도시와 도 이름을 검색한 영어 주소대로 넣으세요.</p>
+</section>
+
+<!-- 11. 전화 -->
+<section class="step" data-title="전화번호 넣기">
+  <span class="kicker">11단계</span>
+  <h2>전화번호는 맨 앞 0을 빼고 넣으세요</h2>
+  <ol class="do">
+    <li><div><p><b>전화 유형</b>: <span class="answer">휴대폰(모바일)</span></p></div></li>
+    <li><div><p><b>국가 코드</b>: <span class="answer">SOUTH KOREA (KOR) (+82)</span></p></div></li>
+    <li><div><p><b>번호</b>: 010-1234-5678 이라면 맨 앞 0을 빼고 <mark>1012345678</mark> 로 넣습니다.</p></div></li>
+  </ol>
+  <div class="phone" data-noread>
+    <label for="phoneIn">번호를 바꿔 드릴게요. 휴대폰 번호를 그대로 넣어 보세요.</label>
+    <input id="phoneIn" type="tel" inputmode="numeric" autocomplete="off" placeholder="010-1234-5678">
+    <div class="out"><b id="phoneOut">1012345678</b><button class="copy" type="button" id="phoneCopy">복사</button></div>
+    <p class="small">넣은 번호는 이 휴대폰 안에서만 바뀌고, 어디에도 저장되거나 보내지지 않습니다.</p>
+  </div>
+</section>
+
+<!-- 12. 소셜미디어 · GE -->
+<section class="step" data-title="소셜 미디어·GE 멤버십">
+  <span class="kicker">12단계</span>
+  <h2>소셜 미디어는 비우고, GE는 ‘아니요’</h2>
+  <ol class="do">
+    <li><div><p>소셜 미디어 칸(페이스북, 인스타그램 등)은 <b>비워 두세요.</b></p></div></li>
+    <li><div><p>그 아래 <mark>저는 온라인 활동을 하지 않습니다.</mark> 네모 칸을 눌러 <b>체크</b>하세요.</p></div></li>
+    <li><div><p>“관세국경보호청 글로벌 엔트리 프로그램의 회원이신가요?” → <span class="answer">아니요</span></p></div></li>
+  </ol>
+  <div class="shot" data-noread>
+    <p class="tap" style="font-size:.9rem">☑ 저는 온라인 활동을 하지 않습니다.</p>
+    <p class="o-q">GE 멤버십 · 글로벌 엔트리 프로그램의 회원이신가요? *</p>
+    <div class="o-radio"><span>예</span><span class="on">아니요</span></div>
+  </div>
+</section>
+
+<!-- 13. 부모 · 취업 -->
+<section class="step" data-title="부모 이름·취업 정보">
+  <span class="kicker">13단계</span>
+  <h2>부모님 이름을 영어로 넣으세요</h2>
+  <ol class="do">
+    <li><div><p><b>아버지 성 / 이름</b>, <b>어머니 성 / 이름</b>을 넣으세요. <b>부모님 여권에 적힌 영어 이름</b> 그대로 씁니다.</p></div></li>
+    <li><div><p><b>보호자 성 / 이름</b>: 자녀를 돌보는 분(할머니, 할아버지 등)의 영어 이름을 넣으세요.</p></div></li>
+    <li><div><p><b>취업 정보</b> “현재 또는 이전 고용주가 있습니까?” → <span class="answer">아니요</span> <span class="small">(학생이므로)</span></p></div></li>
+  </ol>
+  <div class="note">
+    <h3>함께 살지 않아도 모두 넣으세요</h3>
+    <p>돌아가셨거나, 이혼·별거 등으로 함께 살지 않는 부모님도 이름을 넣어야 합니다.</p>
+  </div>
+</section>
+
+<!-- 14. 미국 연락 담당자 -->
+<section class="step" data-title="숙소 정보 붙여넣기">
+  <span class="kicker">14단계</span>
+  <h2>숙소 정보를 복사해서 붙여넣으세요</h2>
+  <p>‘여행 정보를 입력’ 화면의 <b>미국 연락 담당자 정보</b>에 아래 숙소 정보를 넣습니다. <mark>복사</mark>를 누르고, 공식 사이트 칸을 길게 눌러 <b>붙여넣기</b>하세요.</p>
+  <div class="copylist" data-noread>
+    <div class="crow"><span class="lab">이름 *</span><span class="val">PIC GUAM</span><button class="copy" type="button" data-copy="PIC GUAM">복사</button></div>
+    <div class="crow"><span class="lab">주소 입력란 1 *</span><span class="val">210 PALE SAN VITORES ROAD</span><button class="copy" type="button" data-copy="210 PALE SAN VITORES ROAD">복사</button></div>
+    <div class="crow"><span class="lab">주소 입력란 2</span><span class="val blank">비워 두세요</span></div>
+    <div class="crow"><span class="lab">아파트 번호</span><span class="val blank">비워 두세요</span></div>
+    <div class="crow"><span class="lab">도시 *</span><span class="val">TUMON</span><button class="copy" type="button" data-copy="TUMON">복사</button></div>
+    <div class="crow"><span class="lab">주 * (목록에서 고르세요)</span><span class="val">GUAM</span><button class="copy" type="button" data-copy="GUAM">복사</button></div>
+    <div class="crow"><span class="lab">국가 코드 * (목록에서 고르세요)</span><span class="val">GUAM (GUM) (+1)</span><button class="copy" type="button" data-copy="GUAM (GUM) (+1)">복사</button></div>
+    <div class="crow"><span class="lab">휴대전화 번호 *</span><span class="val">6716469171</span><button class="copy" type="button" data-copy="6716469171">복사</button></div>
+  </div>
+  <div class="warn">
+    <h3>빨간 상자가 나와도 괜찮아요</h3>
+    <p>“주소 확인: 유효하지 않은 주소입니다.”라는 빨간 상자가 나오면, 그 안의 <b>네모 칸을 눌러 체크</b>하세요. 그러면 다음으로 넘어갈 수 있습니다.</p>
+  </div>
+  <div class="shot" data-noread>
+    <div class="o-field"><small>이름 *</small><span>PIC GUAM</span></div>
+    <div class="o-check tap">☑ 이 주소가 정확하다는 것을 확인하려면 이 상자를 체크하십시오.*</div>
+  </div>
+</section>
+
+<!-- 15. 체류 주소 -->
+<section class="step" data-title="미국 체류 중 주소">
+  <span class="kicker">15단계</span>
+  <h2>체류 중 주소는 ‘예’만 누르세요</h2>
+  <ol class="do">
+    <li><div><p>“미국에 있는 동안 귀하의 주소는 위에 있는 미국 연락 담당자 주소와 동일한가요?” → <span class="answer">예</span></p></div></li>
+    <li><div><p>‘예’를 누르면 주소가 저절로 채워집니다. 따로 넣을 것은 없습니다.</p></div></li>
+  </ol>
+  <div class="shot" data-noread>
+    <p class="o-q">미국에 있는 동안 귀하의 주소는 위에 있는 미국 연락 담당자 주소와 동일한가요?</p>
+    <div class="o-radio"><span class="on tap">예</span><span>아니요</span></div>
+  </div>
+</section>
+
+<!-- 16. 비상연락처 -->
+<section class="step" data-title="비상연락처 넣기">
+  <span class="kicker">16단계</span>
+  <h2>비상연락처에 보호자 정보를 넣으세요</h2>
+  <ol class="do">
+    <li><div><p><b>성</b>, <b>이름(Given Name)</b>: 보호자 이름을 <b>영어로</b> 넣으세요. (예: 성 KIM, 이름 YOUNGHEE)</p></div></li>
+    <li><div><p><b>이메일 주소</b>: 보호자 이메일을 넣으세요.</p></div></li>
+    <li><div><p><b>국가 코드</b>: <span class="answer">SOUTH KOREA (KOR) (+82)</span></p></div></li>
+    <li><div><p><b>휴대전화 번호</b>: 맨 앞 0을 빼고 넣으세요. <span class="small">(11단계의 번호 바꾸기를 써도 됩니다)</span></p></div></li>
+    <li><div><p>“전화번호가 유효하지 않습니다”라는 빨간 상자가 나오면 <b>네모 칸을 눌러 체크</b>하세요.</p></div></li>
+    <li><div><p>파란 <b>다음</b> 버튼을 누르세요.</p></div></li>
+  </ol>
+  <div class="shot" data-noread>
+    <div class="o-check tap">☑ 이 전화번호가 정확하다는 것을 확인하려면 이 상자를 체크하십시오.*</div>
+    <div class="o-field"><small>국가 코드 *</small><span>SOUTH KOREA (KOR) (+82)</span></div>
+    <div class="o-field"><small>휴대전화 번호 *</small><span>1012345678</span></div>
+  </div>
+</section>
+
+<!-- 17. 자격 질문 -->
+<section class="step" data-title="자격 질문에 답하기">
+  <span class="kicker">17단계</span>
+  <h2>‘자격 질문’은 천천히 읽고 답하세요</h2>
+  <ol class="do">
+    <li><div><p>병, 범죄 기록, 미국 입국 거절 경험 등을 묻는 질문들이 나옵니다.</p></div></li>
+    <li><div><p>해당하는 일이 없으면 모두 <span class="answer">아니요</span>를 누르세요.</p></div></li>
+    <li><div><p>파란 <b>다음</b> 버튼을 누르세요.</p></div></li>
+  </ol>
+  <div class="warn">
+    <h3>실수로 ‘예’를 누르지 않게 조심하세요</h3>
+    <p>‘예’를 잘못 누르면 허가가 거절될 수 있습니다. 누르기 전에 한 번 더 보세요. 해당하는 일이 있다면 사실대로 답해야 합니다.</p>
+  </div>
+</section>
+
+<!-- 18. 검토·제출 -->
+<section class="step" data-title="확인하고 제출하기">
+  <span class="kicker">18단계</span>
+  <h2>제출 전에 한 번 더 확인하세요</h2>
+  <p>‘신청서 검토’ 화면에서 아래 항목을 여권과 비교해 보세요. 다 맞으면 칸을 눌러 표시하세요.</p>
+  <ul class="checks" data-noread>
+    <li><input type="checkbox" id="ck1"><label for="ck1">성과 이름이 여권과 같고, 칸이 바뀌지 않았어요.</label></li>
+    <li><input type="checkbox" id="ck2"><label for="ck2">여권 번호가 한 글자도 틀리지 않았어요.</label></li>
+    <li><input type="checkbox" id="ck3"><label for="ck3">생년월일, 발급일, 만료일의 일·월·년이 맞아요.</label></li>
+    <li><input type="checkbox" id="ck4"><label for="ck4">이메일 주소가 맞아요.</label></li>
+    <li><input type="checkbox" id="ck5"><label for="ck5">숙소 이름이 PIC GUAM으로 되어 있어요.</label></li>
+  </ul>
+  <p>틀린 곳이 있으면 <b>이전</b> 버튼으로 돌아가 고치세요. 모두 맞으면 공식 사이트에서 <mark>제출</mark>을 누르세요.</p>
+</section>
+
+<!-- 19. 보류 화면 캡처 -->
+<section class="step" data-title="‘허가 보류 중’ 화면 캡처">
+  <span class="kicker">19단계</span>
+  <h2>‘허가 보류 중’ 화면을 꼭 캡처하세요</h2>
+  <p>제출하면 <b>‘허가 보류 중’</b> 화면이 나옵니다. 거절된 것이 아니라 <b>검토 중</b>이라는 뜻입니다.</p>
+  <div class="warn">
+    <h3>이 화면을 반드시 사진으로 남기세요</h3>
+    <p>이 화면의 <b>신청 번호</b>가 있어야 나중에 결과를 볼 수 있습니다.</p>
+  </div>
+  <ol class="do">
+    <li><div><h3>화면 캡처하는 방법</h3><p><b>갤럭시</b>: 오른쪽 <b>전원 버튼</b>과 <b>소리 줄이기 버튼</b>을 동시에 짧게 누르세요.</p><p><b>아이폰</b>: 오른쪽 <b>옆 버튼</b>과 왼쪽 <b>소리 키우기 버튼</b>을 동시에 짧게 누르세요.</p></div></li>
+    <li><div><p>찰칵 소리가 나면 휴대폰 <b>사진(갤러리)</b>에 저장된 것입니다.</p></div></li>
+  </ol>
+  <div class="shot" data-noread>
+    <p style="font-weight:700;color:var(--official);font-size:1.1rem">허가 보류 중</p>
+    <div class="o-field"><small>신청 번호</small><span class="tap">02H6●●●●●●●●●●●</span></div>
+    <div class="o-field"><small>상태</small><span>허가 보류 중</span></div>
+  </div>
+</section>
+
+<!-- 20. 메일 기다리기 -->
+<section class="step" data-title="결과 메일 기다리기">
+  <span class="kicker">20단계</span>
+  <h2>결과 메일을 기다리세요</h2>
+  <ol class="do">
+    <li><div><p>보통 <b>평일 3시간 안에</b> 메일이 옵니다. 더 걸릴 수도 있고, 늦으면 <b>5일</b>까지 걸립니다.</p></div></li>
+    <li><div><p>보낸 사람이 <mark>no-reply-gcnmi@cbp.dhs.gov</mark> 인 메일을 찾으세요. 제목은 <b>G-CNMI ETA Application Number</b> 입니다.</p></div></li>
+    <li><div><p>메일 안의 <b>파란 글씨 링크</b>를 누르면 공식 사이트가 열립니다.</p></div></li>
+  </ol>
+  <p class="small">메일은 영어로 옵니다. 네이버 메일에서는 ‘번역하기’를 누르면 한국어로 볼 수 있습니다.</p>
+</section>
+
+<!-- 21. 승인 확인 -->
+<section class="step" data-title="승인 확인·선생님께 보내기">
+  <span class="kicker">21단계</span>
+  <h2>‘허가 승인됨’을 확인하고 선생님께 보내세요</h2>
+  <ol class="do">
+    <li><div><p>공식 사이트에서 맨 위를 눌러 <b>한국어</b>로 바꾸세요.</p></div></li>
+    <li><div><p><mark>기존 신청서 계속</mark>을 누르세요.</p></div></li>
+    <li><div><p>캡처해 둔 <b>신청 번호</b>, 자녀 <b>여권 번호</b>, <b>생년월일</b>을 넣으세요.</p></div></li>
+    <li><div><p>상태에 <b>허가 승인됨</b>이 보이면 성공입니다.</p></div></li>
+    <li><div><p>오른쪽 위 <mark>다운로드</mark>를 눌러 PDF 파일로 저장하고, <b>담당 선생님께 보내 주세요.</b></p></div></li>
+  </ol>
+  <div class="shot" data-noread>
+    <div class="o-bar"><span style="font-size:1rem">허가 승인됨</span><span class="tap">다운로드 ⤓</span></div>
+    <div class="o-field"><small>상태</small><span>허가 승인됨</span></div>
+    <div class="o-field"><small>만료</small><span>(2년 뒤 날짜)</span></div>
+  </div>
+  <p class="small">허가는 2년 동안 쓸 수 있습니다. 여권 만료일이 더 빠르면 여권 만료일까지입니다.</p>
+</section>
+
+<!-- 22. 끝 · 자주 묻는 문제 -->
+<section class="step" data-title="끝 · 자주 묻는 문제">
+  <span class="kicker">끝</span>
+  <h2>수고하셨습니다!</h2>
+  <p>자녀가 더 있다면 <b>한 명씩 처음부터 다시</b> 신청해 주세요.</p>
+  <button class="big-link" type="button" id="restart" data-noread style="cursor:pointer;width:100%">다른 자녀 신청하러 1단계로 가기</button>
+  <h3>잘 안 될 때</h3>
+  <div class="faq">
+    <details><summary>얼굴 사진이 계속 안 올라가요</summary><p>밝은 흰 벽 앞에서, 모자·안경 없이, 얼굴이 화면 가운데 오도록 다시 찍어 보세요.</p></details>
+    <details><summary>인증 메일이 안 와요</summary><p>스팸함을 확인하세요. 그래도 없으면 이메일 주소에 오타가 없는지 확인하세요.</p></details>
+    <details><summary>신청 번호를 잃어버렸어요</summary><p>처음에 넣은 이메일함에서 ‘G-CNMI ETA Application Number’ 메일을 찾으면 신청 번호가 적혀 있습니다.</p></details>
+    <details><summary>5일이 지나도 결과가 안 나와요 / 거절됐어요</summary><p>메일에 적힌 이유를 확인하고, 틀린 곳을 고쳐 새로 신청하세요. 어려우면 담당 선생님께 연락하세요.</p></details>
+    <details><summary>돈을 내라고 해요</summary><p>공식 신청은 무료입니다. 주소가 <b>g-cnmi-eta.cbp.dhs.gov</b>가 아니면 가짜 사이트이니 바로 닫으세요.</p></details>
+  </div>
+</section>
+
+</main>
+
+<nav class="nav" aria-label="단계 이동">
+  <div class="nav-in">
+    <button id="prev" type="button">◀ 이전</button>
+    <button id="next" type="button">다음 ▶</button>
+  </div>
+</nav>
+
+<div class="menu" id="menu" hidden>
+  <div class="menu-in" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+    <div class="menu-head"><h3 id="menuTitle">전체 단계</h3><button class="tool" id="menuClose" type="button">닫기</button></div>
+    <ol id="menuList"></ol>
+  </div>
+</div>
+
+<script>
+(() => {
+  const steps = [...document.querySelectorAll('.step')];
+  const total = steps.length;
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+  let cur = 0;
+
+  function show(i, scroll = true) {
+    cur = Math.max(0, Math.min(total - 1, i));
+    steps.forEach((s, n) => { s.hidden = n !== cur; });
+    $('count').textContent = (cur + 1) + ' / ' + total;
+    $('barFill').style.width = ((cur + 1) / total * 100) + '%';
+    $('prev').disabled = cur === 0;
+    $('next').textContent = cur === total - 1 ? '처음으로 ▲' : '다음 ▶';
+    store.set('eta-step', String(cur));
+    stopSpeak();
+    if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
+    renderMenu();
+  }
+
+  $('prev').addEventListener('click', () => show(cur - 1));
+  $('next').addEventListener('click', () => show(cur === total - 1 ? 0 : cur + 1));
+  $('restart').addEventListener('click', () => show(1));
+
+  // 전체 단계 목록
+  function renderMenu() {
+    const ol = $('menuList');
+    ol.innerHTML = '';
+    steps.forEach((s, n) => {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button';
+      if (n === cur) b.setAttribute('aria-current', 'step');
+      b.innerHTML = '<b>' + (n === 0 ? '준비' : n === total - 1 ? '끝' : n) + '</b><span></span>';
+      b.querySelector('span').textContent = s.dataset.title;
+      b.addEventListener('click', () => { closeMenu(); show(n); });
+      li.appendChild(b);
+      ol.appendChild(li);
+    });
+  }
+  function closeMenu() { $('menu').hidden = true; $('menuBtn').focus(); }
+  $('menuBtn').addEventListener('click', () => { $('menu').hidden = false; $('menuClose').focus(); });
+  $('menuClose').addEventListener('click', closeMenu);
+  $('menu').addEventListener('click', e => { if (e.target.id === 'menu') closeMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('menu').hidden) closeMenu(); });
+
+  // 글자 크기 (보통 → 크게 → 작게)
+  const sizes = ['size-2', 'size-3', 'size-1'];
+  let sizeIdx = Math.max(0, sizes.indexOf(store.get('eta-size') || 'size-2'));
+  function applySize() {
+    document.documentElement.classList.remove('size-1', 'size-3');
+    if (sizes[sizeIdx] !== 'size-2') document.documentElement.classList.add(sizes[sizeIdx]);
+    $('sizeBtn').textContent = '글자 ' + ['보통', '크게', '작게'][sizeIdx];
+    store.set('eta-size', sizes[sizeIdx]);
+  }
+  $('sizeBtn').addEventListener('click', () => { sizeIdx = (sizeIdx + 1) % sizes.length; applySize(); });
+
+  // 복사
+  function flash(btn) {
+    const old = btn.dataset.label || btn.textContent;
+    btn.dataset.label = old;
+    btn.textContent = '복사됨 ✓';
+    btn.classList.add('done');
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { btn.textContent = old; btn.classList.remove('done'); }, 1800);
+  }
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+    return ok;
+  }
+  function copyText(text, btn) {
+    const done = () => flash(btn);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, () => { if (fallbackCopy(text)) done(); else selectVal(btn); });
+    } else if (fallbackCopy(text)) { done(); } else { selectVal(btn); }
+  }
+  function selectVal(btn) {
+    const val = btn.parentElement.querySelector('.val, b');
+    if (!val) return;
+    const r = document.createRange(); r.selectNodeContents(val);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    btn.textContent = '길게 눌러 복사';
+  }
+  document.querySelectorAll('[data-copy]').forEach(btn =>
+    btn.addEventListener('click', () => copyText(btn.dataset.copy, btn)));
+
+  // 전화번호 바꾸기
+  function convertPhone(v) {
+    let d = (v || '').replace(/\D/g, '');
+    if (d.startsWith('82')) d = d.slice(2);
+    if (d.startsWith('0')) d = d.slice(1);
+    return d;
+  }
+  $('phoneIn').addEventListener('input', e => {
+    const d = convertPhone(e.target.value);
+    $('phoneOut').textContent = d || '1012345678';
+  });
+  $('phoneCopy').addEventListener('click', e => copyText($('phoneOut').textContent, e.currentTarget));
+
+  // 소리로 듣기
+  const synth = window.speechSynthesis;
+  let speaking = false;
+  function stepText(sec) {
+    const c = sec.cloneNode(true);
+    c.querySelectorAll('[data-noread], .kicker').forEach(n => n.remove());
+    return c.innerText.replace(/[▶◀↗☑▾⤓●]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  function stopSpeak() {
+    speaking = false;
+    try { synth && synth.cancel(); } catch (e) {}
+    $('readBtn').setAttribute('aria-pressed', 'false');
+    $('readBtn').textContent = '소리로 듣기';
+  }
+  $('readBtn').addEventListener('click', () => {
+    if (!synth || typeof SpeechSynthesisUtterance === 'undefined') {
+      $('readBtn').textContent = '듣기 안 됨';
+      return;
+    }
+    if (speaking) { stopSpeak(); return; }
+    const u = new SpeechSynthesisUtterance(stepText(steps[cur]));
+    u.lang = 'ko-KR'; u.rate = 0.9;
+    const ko = synth.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith('ko'));
+    if (ko) u.voice = ko;
+    u.onend = u.onerror = stopSpeak;
+    speaking = true;
+    $('readBtn').setAttribute('aria-pressed', 'true');
+    $('readBtn').textContent = '그만 듣기';
+    synth.cancel();
+    synth.speak(u);
+  });
+
+  applySize();
+  const saved = parseInt(store.get('eta-step') || '0', 10);
+  show(Number.isFinite(saved) ? saved : 0, false);
+})();
+</script>
