@@ -172,6 +172,27 @@ b, strong { font-weight: 900; }
 .copy:active { transform: translateY(1px); }
 .copy.done { background: var(--ok); }
 
+/* 집 주소 칸별 설명 */
+.need, .opt {
+  display: inline-block; font-size: .75rem; font-weight: 900; padding: 1px 10px;
+  border-radius: 999px; white-space: nowrap; vertical-align: 2px;
+}
+.need { background: var(--warn-ink); color: #fff; }
+.opt { background: #fff; color: var(--ink-soft); border: 2px dashed var(--ink-soft); }
+.fields { display: grid; gap: 10px; }
+.frow { background: var(--card); border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 6px; }
+.fhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 1.05rem; }
+.ex { background: #FFF0B8; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: .95rem; }
+.frow .crow { grid-template-columns: 1fr auto; }
+.addr-split { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-weight: 900; font-size: 1rem; background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 10px; }
+.addr-split span[class^="p"] { padding: 2px 6px; border-radius: 6px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.legend > span { white-space: nowrap; }
+.p1, .k1 { background: #FFD6B8; }
+.p2, .k2 { background: #CDEBC9; }
+.p3, .k3 { background: #D6DDF7; }
+.key { display: inline-block; width: .9em; height: .9em; border-radius: 3px; vertical-align: -1px; margin-right: 2px; border: 1px solid var(--ink-soft); }
+
 .big-link {
   display: block; text-align: center; text-decoration: none;
   background: var(--card); color: var(--ink); border: 3px solid var(--ink);
@@ -425,19 +446,69 @@ b, strong { font-weight: 900; }
 <section class="step" data-title="집 주소(영문) 넣기">
   <span class="kicker">10단계</span>
   <h2>집 주소를 영어로 넣으세요</h2>
+  <p>‘귀하의 연락처 정보’ 화면입니다. 칸이 6개 있는데, <span class="need">꼭 넣기</span> 칸은 반드시 채우고 <span class="opt">비워도 됨</span> 칸은 해당 없으면 비워 두세요.</p>
+
+  <h3>① 먼저 우리집 영어 주소를 찾으세요</h3>
   <ol class="do">
-    <li><div><p>네이버에서 <mark>우리집 주소 + 영문주소</mark>라고 검색하면 영어 주소가 나옵니다. 아래 사이트에서도 찾을 수 있습니다.</p>
-      <a class="big-link" href="https://www.juso.go.kr/" target="_blank" rel="noopener" data-noread>도로명주소 사이트 열기 ↗<small>주소 검색 후 ‘영문보기’를 누르세요</small></a></div></li>
-    <li><div><p><b>주소 입력란 1</b>: 건물 번호, 도로 이름, 읍·면 순서로 넣습니다.<br><span class="small">예: 123, Socheon-ro, Socheon-myeon</span></p></div></li>
-    <li><div><p><b>아파트 번호</b>: 아파트라면 동·호수를 넣고, 아니면 비워 두세요.</p></div></li>
-    <li><div><p><b>도시</b>, <b>주/도/지역</b>, <b>국가</b>는 아래를 복사해서 붙여넣으세요.</p></div></li>
+    <li><div><p>네이버 검색창에 <mark>우리집 도로명 주소 + 영문주소</mark>라고 넣어 검색하세요.</p><p class="small">예: “봉화로 12 영문주소”</p></div></li>
+    <li><div><p>또는 아래 도로명주소 사이트에서 집 주소를 검색하고 <b>‘영문보기’</b>를 누르세요.</p>
+      <a class="big-link" href="https://www.juso.go.kr/" target="_blank" rel="noopener" data-noread>도로명주소 사이트 열기 ↗<small>juso.go.kr · 주소 검색 후 ‘영문보기’</small></a></div></li>
+    <li><div><p>영어 주소는 이렇게 생겼습니다. 쉼표(,)로 나뉜 조각을 칸마다 나눠 넣습니다.</p>
+      <div class="addr-split" data-noread>
+        <span class="p1">12, Bonghwa-ro, Bonghwa-eup,</span>
+        <span class="p2">Bonghwa-gun,</span>
+        <span class="p3">Gyeongsangbuk-do</span>
+      </div>
+      <p class="small legend"><span><span class="key k1"></span>주소 입력란 1</span><span><span class="key k2"></span>도시</span><span><span class="key k3"></span>주/도/지역</span></p></div></li>
   </ol>
-  <div class="copylist" data-noread>
-    <div class="crow"><span class="lab">도시 *</span><span class="val">Bonghwa-gun</span><button class="copy" type="button" data-copy="Bonghwa-gun">복사</button></div>
-    <div class="crow"><span class="lab">주/도/지역 *</span><span class="val">Gyeongsangbuk-do</span><button class="copy" type="button" data-copy="Gyeongsangbuk-do">복사</button></div>
-    <div class="crow"><span class="lab">국가 * (목록에서 고르세요)</span><span class="val">SOUTH KOREA (KOR)</span><button class="copy" type="button" data-copy="SOUTH KOREA (KOR)">복사</button></div>
+
+  <h3>② 칸마다 이렇게 넣으세요</h3>
+  <div class="fields">
+    <div class="frow">
+      <div class="fhead"><b>주소 입력란 1 *</b><span class="need">꼭 넣기</span></div>
+      <p><b>건물 번호, 도로 이름, 읍·면</b>을 넣습니다. 영어 주소의 <b>도시(…-gun) 앞부분 전체</b>입니다.</p>
+      <p class="ex">예) 12, Bonghwa-ro, Bonghwa-eup<br>예) 123, Socheon-ro, Socheon-myeon</p>
+    </div>
+    <div class="frow">
+      <div class="fhead"><b>주소 입력란 2</b><span class="opt">비워도 됨</span></div>
+      <p>주소가 길어서 1번 칸에 다 안 들어갈 때만 나머지를 넣습니다. <b>대부분 비워 두시면 됩니다.</b></p>
+    </div>
+    <div class="frow">
+      <div class="fhead"><b>아파트 번호</b><span class="opt">비워도 됨</span></div>
+      <p><b>아파트·빌라</b>에 사시면 동과 호수를 숫자로 넣으세요. <b>주택</b>이면 비워 두세요.</p>
+      <p class="ex">예) 101동 1203호 → 101-1203</p>
+    </div>
+    <div class="frow">
+      <div class="fhead"><b>도시 *</b><span class="need">꼭 넣기</span></div>
+      <p>군·시 이름입니다. 봉화군이면 아래를 복사하세요.</p>
+      <div class="crow" data-noread><span class="val">Bonghwa-gun</span><button class="copy" type="button" data-copy="Bonghwa-gun">복사</button></div>
+    </div>
+    <div class="frow">
+      <div class="fhead"><b>주/도/지역 *</b><span class="need">꼭 넣기</span></div>
+      <p>도 이름입니다. 경상북도면 아래를 복사하세요.</p>
+      <div class="crow" data-noread><span class="val">Gyeongsangbuk-do</span><button class="copy" type="button" data-copy="Gyeongsangbuk-do">복사</button></div>
+    </div>
+    <div class="frow">
+      <div class="fhead"><b>국가 *</b><span class="need">꼭 넣기</span></div>
+      <p>보통 이미 <b>SOUTH KOREA (KOR)</b>로 골라져 있습니다. 아니면 목록을 눌러 고르세요.</p>
+    </div>
   </div>
-  <p class="small">봉화군에 살지 않으시면 도시와 도 이름을 검색한 영어 주소대로 넣으세요.</p>
+
+  <div class="shot" data-noread>
+    <p style="font-weight:700;color:var(--official)">귀하의 연락처 정보</p>
+    <div class="o-field"><small>주소 입력란 1 *</small><span>12, Bonghwa-ro, Bonghwa-eup</span></div>
+    <div class="o-field"><small>주소 입력란 2</small><span style="color:#999">(비워 둠)</span></div>
+    <div class="o-field"><small>아파트 번호</small><span style="color:#999">(주택이면 비워 둠)</span></div>
+    <div class="o-field"><small>도시 *</small><span>Bonghwa-gun</span></div>
+    <div class="o-field"><small>주/도/지역 *</small><span>Gyeongsangbuk-do</span></div>
+    <div class="o-field"><small>국가 *</small><span>SOUTH KOREA (KOR) ▾</span></div>
+  </div>
+  <div class="note">
+    <h3>알아 두세요</h3>
+    <p>· <b>*</b> 표시가 있는 칸이 꼭 넣어야 하는 칸입니다.</p>
+    <p>· 한글은 넣을 수 없습니다. 모두 영어와 숫자로 넣으세요.</p>
+    <p>· 봉화군에 살지 않으시면, 찾은 영어 주소의 군·시 이름과 도 이름을 넣으세요.</p>
+  </div>
 </section>
 
 <!-- 11. 전화 -->
